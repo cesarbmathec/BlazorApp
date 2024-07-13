@@ -1,0 +1,147 @@
+﻿@page "/add-paciente"
+@page "/add-paciente/{id:int}"
+
+@using BlazorApp.Interfaces
+@using BlazorApp.Models
+@inject IServiceAPI serviceAPI
+@inject AppState AppState
+@inject NavigationManager Navigation
+@using System.Text.Json;
+@using System.ComponentModel.DataAnnotations;
+
+@inject IJSRuntime JSRuntime
+
+<PageTitle>@(id.HasValue ? "Editar Paciente" : "Agregar Paciente")</PageTitle>
+
+@if (aux_pac == null && id.HasValue)
+{
+    <div class="d-flex align-items-center w-50 p-4">
+    <strong>Loading...</strong>
+    <div class="spinner-grow text-primary ms-auto" role="status">
+    </div>
+</div>
+}
+else
+{
+    <div class="container-fluid">
+    <h3>@(id.HasValue ? "Editar Paciente" : "Agregar Paciente")</h3>
+
+    <div class="card my-4 border-secondary shadow rounded m-auto">
+        <EditForm Model="paciente" OnValidSubmit="HandleValidSubmit" class="my-4 mx-5">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="form-floating mb-3">
+                <InputText id="cedula_identidad" required class="form-control" @bind-Value="paciente.cedula_identidad"
+                    placeholder="" />
+                <label for="cedula_identidad" class="form-label">Cédula de Identidad: </label>
+                <ValidationMessage For="@(() => paciente.cedula_identidad)" />
+            </div>
+
+            <div class="form-floating mb-3">
+                <InputText id="nombre" required class="form-control" @bind-Value="paciente.nombre" placeholder="" />
+                <label for="nombre" class="form-label">Nombre</label>
+                <ValidationMessage For="@(() => paciente.nombre)" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText id="apellido" required class="form-control" @bind-Value="paciente.apellido" placeholder="" />
+                <label for="apellido" class="form-label">Apellido</label>
+                <ValidationMessage For="@(() => paciente.apellido)" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputDate id="fecha_nacimiento" required class="form-control" @bind-Value="paciente.fecha_nacimiento"
+                    placeholder="" />
+                <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento</label>
+                <ValidationMessage For="@(() => paciente.fecha_nacimiento)" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText id="genero" required class="form-control" @bind-Value="paciente.genero" placeholder="" />
+                <label for="genero" class="form-label">Género</label>
+                <ValidationMessage For="@(() => paciente.genero)" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText id="direccion" class="form-control" @bind-Value="paciente.direccion" placeholder="" />
+                <label for="direccion" class="form-label">Dirección</label>
+                <ValidationMessage For="@(() => paciente.direccion)" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText id="telefono" class="form-control" @bind-Value="paciente.telefono" placeholder="" />
+                <label for="telefono" class="form-label">Teléfono</label>
+                <ValidationMessage For="@(() => paciente.telefono)" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText id="correo_electronico" class="form-control" @bind-Value="paciente.correo_electronico"
+                    placeholder="" />
+                <label for="correo_electronico" class="form-label">Correo Electrónico</label>
+                <ValidationMessage For="@(() => paciente.correo_electronico)" />
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="fas fa-save"></i> Guardar
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" @onclick="NavigateToHome">
+                <i class="fas fa-arrow-left"></i> Ver Lista de Pacientes
+            </button>
+        </EditForm>
+    </div>
+</div>
+}
+@code {
+    [Parameter]
+    public int? id { get; set; }
+    private Paciente paciente = new Paciente();
+    private Paciente? aux_pac = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (id.HasValue)
+        {
+            aux_pac = await serviceAPI.GetPaciente(id);
+            if (aux_pac != null)
+                paciente = aux_pac;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        TrimFields();
+
+        bool resp = false;
+
+        if (id.HasValue)
+        {
+            if (paciente != null)
+            {
+                resp = await serviceAPI.UpdatePaciente(paciente);
+            }
+        }
+        else
+        {
+            if (paciente != null)
+            {
+                resp = await serviceAPI.CreatePaciente(paciente);
+            }
+        }
+        if (resp)
+        {
+            AppState.IsPacienteAgregado = true;
+            NavigateToHome();
+        }
+    }
+
+    private void TrimFields()
+    {
+        paciente.cedula_identidad = paciente.cedula_identidad.Trim();
+        paciente.nombre = paciente.nombre.Trim();
+        paciente.apellido = paciente.apellido.Trim();
+        paciente.genero = paciente.genero.Trim();
+        paciente.direccion = paciente.direccion.Trim();
+        paciente.telefono = paciente.telefono.Trim();
+        paciente.correo_electronico = paciente.correo_electronico.Trim();
+    }
+
+    private void NavigateToHome()
+    {
+        Navigation.NavigateTo("/");
+    }
+}
